@@ -5,6 +5,7 @@ import "log"
 const (
 	POSTBACK_HANDLER = 1 << iota
 	LOGGER_HANDLER
+	SMART_HANDLER
 )
 
 type MessageHandler interface {
@@ -19,6 +20,9 @@ func New(t uint, args ...interface{}) (hnd MessageHandler) {
 
 	case LOGGER_HANDLER:
 		hnd = NewLoggerHandler(args[0].(*log.Logger))
+
+	case SMART_HANDLER:
+		hnd = NewSmartHandler()
 	}
 
 	return hnd

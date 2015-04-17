@@ -3,22 +3,26 @@ package watch
 import (
 	"log"
 	"os"
+	"sync"
+	"time"
 
-	"github.com/etrepat/postman/handler"
-	"github.com/etrepat/postman/imap"
-	"github.com/etrepat/postman/version"
+	"github.com/vjeantet/postman/handler"
+	"github.com/vjeantet/postman/imap"
+	"github.com/vjeantet/postman/version"
 )
 
 const (
 	DELIVERY_MODE_POSTBACK = "postback"
 	DELIVERY_MODE_LOGGER   = "logger"
+	DELIVERY_MODE_SMART    = "smart"
 )
 
 var (
 	DefaultLogger  = log.New(os.Stdout, "[watch] ", log.LstdFlags)
 	DELIVERY_MODES = map[string]bool{
 		DELIVERY_MODE_POSTBACK: true,
-		DELIVERY_MODE_LOGGER:   true}
+		DELIVERY_MODE_LOGGER:   true,
+		DELIVERY_MODE_SMART:    true}
 )
 
 type Flags struct {
@@ -39,7 +43,9 @@ type Watch struct {
 	handlers []handler.MessageHandler
 	client   *imap.ImapClient
 	logger   *log.Logger
-	chMsgs   chan []string
+	chMsgs   chan string
+	done     chan bool
+	wg       sync.WaitGroup
 }
 
 func (w *Watch) Mailbox() string {
@@ -69,15 +75,17 @@ func (w *Watch) Handlers() []handler.MessageHandler {
 func (w *Watch) Start() {
 	w.logger.Println("Starting ", version.VersionShort())
 
-	w.chMsgs = make(chan []string)
+	w.chMsgs = make(chan string, 3)
+	w.done = make(chan bool)
 
+	w.wg.Add(1)
 	go w.handleIncoming()
 
 	w.logger.Printf("Handling incoming messages with:")
 	for i := 0; i < len(w.handlers); i++ {
 		w.logger.Printf("> %s", w.handlers[i].Describe())
 	}
-
+	w.wg.Add(1)
 	err := w.monitorMailbox()
 	if err != nil {
 		w.logger.Fatalln(err)
@@ -85,30 +93,40 @@ func (w *Watch) Start() {
 }
 
 func (w *Watch) Stop() {
-	// TODO: Unimplemented for now
+	close(w.done)
+	log.Printf("Waiting for termination ==> maximum %d minutes", imap.IdleTimeout/time.Minute)
+	w.wg.Wait()
+
+	// Stop close imap connection only when the program enter a waiting state
+
 }
 
 func (w *Watch) handleIncoming() {
 	var err error
+	var wg sync.WaitGroup
+	for message := range w.chMsgs {
 
-	for {
-		messages := <-w.chMsgs
-
-		for _, msg := range messages {
+		wg.Add(1)
+		go func(m string) {
 			for _, handler := range w.handlers {
-				err = handler.Deliver(msg)
+				err = handler.Deliver(m)
 				if err != nil {
 					w.logger.Println(err)
 				} else {
 					w.logger.Println("Delivered successfully")
 				}
 			}
-		}
+			wg.Done()
+		}(message)
 	}
+	wg.Wait()
+	log.Printf("quitting handleIncomming")
+	w.wg.Done()
 }
 
 func (w *Watch) monitorMailbox() error {
-	var messages []string
+	defer w.wg.Done()
+
 	var err error
 
 	w.logger.Printf("Initiating connection to %s", w.client.Addr())
@@ -117,6 +135,7 @@ func (w *Watch) monitorMailbox() error {
 		return err
 	}
 
+	defer log.Println("Disconnected from IMAP Server " + w.client.Addr())
 	defer w.client.Disconnect()
 
 	w.logger.Printf("Switching to %s", w.mailbox)
@@ -126,27 +145,22 @@ func (w *Watch) monitorMailbox() error {
 	}
 
 	w.logger.Printf("Checking for new (unseen) messages")
-	messages, err = w.client.Unseen()
+	err = w.client.Unseen(w.chMsgs)
 	if err != nil {
 		return err
 	}
 
-	if len(messages) != 0 {
-		w.logger.Printf("Detected %d new (unseen) messages. Delivering...", len(messages))
-		w.chMsgs <- messages
-	}
-
+L:
 	for {
+		select {
+		case <-w.done:
+			close(w.chMsgs)
+			log.Printf("closing w.chMsgs")
+			break L
+		default:
+		}
 		w.logger.Printf("Waiting for new messages")
-		messages, err = w.client.Incoming()
-		if err != nil {
-			return err
-		}
-
-		if len(messages) != 0 {
-			w.logger.Printf("Detected %d new (unseen) messages. Delivering...", len(messages))
-			w.chMsgs <- messages
-		}
+		w.client.Incoming(w.chMsgs)
 	}
 
 	return nil
@@ -173,6 +187,8 @@ func New(flags *Flags, handlers ...handler.MessageHandler) *Watch {
 
 		case DELIVERY_MODE_LOGGER:
 			watch.AddHandler(handler.New(handler.LOGGER_HANDLER, DefaultLogger))
+		case DELIVERY_MODE_SMART:
+			watch.AddHandler(handler.New(handler.SMART_HANDLER))
 		}
 	}
 

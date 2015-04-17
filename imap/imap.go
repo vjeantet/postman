@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	IdleTimeout = 29 * time.Minute
+	IdleTimeout = 3 * time.Minute
 )
 
 var (
@@ -83,44 +83,57 @@ func (c *ImapClient) Select(mailbox string) error {
 	return err
 }
 
-func (c *ImapClient) Unseen() (messages []string, err error) {
+func (c *ImapClient) Unseen(chMsg chan string) (err error) {
 	var ids []uint32
 
 	ids, err = c.query("UNSEEN")
 	if err != nil {
-		return messages, err
+		return err
 	}
 
-	messages, err = c.messagesForIds(ids)
+	// Récupérer les messages un par un
+	// for _, id := range ids {
+	// 	err = c.messagesForIds([]uint32{id}, chMsg)
+	// }
+
+	// Récupérer les messages par lot d'une taille équivalente à la capacité du channel
+	size := cap(chMsg)
+	if size == 0 {
+		size = 1
+	}
+	for i := 0; i <= len(ids)/size; i++ {
+		start := i * size
+		end := start + size
+		if end > len(ids) {
+			end = len(ids)
+		}
+		err = c.messagesForIds(ids[start:end], chMsg)
+	}
+
 	if err != nil {
-		return messages, err
+		return err
 	}
 
-	return messages, err
+	return err
 }
 
-func (c *ImapClient) Incoming() (messages []string, err error) {
+func (c *ImapClient) Incoming(chMsg chan string) (err error) {
 	err = c.waitForIncoming()
 	if err != nil {
-		return messages, err
+		return err
 	}
 
-	ids := []uint32{}
 	for _, resp := range c.client.Data {
 		switch resp.Label {
 		case "EXISTS":
-			ids = append(ids, imap.AsNumber(resp.Fields[0]))
+			return c.Unseen(chMsg)
+		case "FETCH":
+			return c.Unseen(chMsg)
 		}
+
 	}
 
-	c.client.Data = nil
-
-	messages, err = c.messagesForIds(ids)
-	if err != nil {
-		return messages, err
-	}
-
-	return messages, err
+	return err
 }
 
 func (c *ImapClient) query(arguments ...string) ([]uint32, error) {
@@ -137,8 +150,7 @@ func (c *ImapClient) query(arguments ...string) ([]uint32, error) {
 	return cmd.Data[0].SearchResults(), nil
 }
 
-func (c *ImapClient) messagesForIds(ids []uint32) ([]string, error) {
-	messages := []string{}
+func (c *ImapClient) messagesForIds(ids []uint32, chMsg chan string) error {
 
 	if len(ids) > 0 {
 		set, _ := imap.NewSeqSet("")
@@ -146,16 +158,16 @@ func (c *ImapClient) messagesForIds(ids []uint32) ([]string, error) {
 
 		cmd, err := imap.Wait(c.client.Fetch(set, "RFC822"))
 		if err != nil {
-			return messages, fmt.Errorf("An error ocurred while fetching unread messages data. ", err)
+			return fmt.Errorf("An error ocurred while fetching unread messages data. ", err)
 		}
 
 		for _, msg := range cmd.Data {
 			attrs := msg.MessageInfo().Attrs
-			messages = append(messages, imap.AsString(attrs["RFC822"]))
+			chMsg <- imap.AsString(attrs["RFC822"])
 		}
 	}
 
-	return messages, nil
+	return nil
 }
 
 func (c *ImapClient) waitForIncoming() (err error) {

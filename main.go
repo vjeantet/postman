@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
 	"strings"
+	"syscall"
 
-	"github.com/etrepat/postman/version"
-	"github.com/etrepat/postman/watch"
 	flag "github.com/ogier/pflag"
+	"github.com/vjeantet/postman/version"
+	"github.com/vjeantet/postman/watch"
 )
 
 func main() {
@@ -20,7 +22,15 @@ func main() {
 	}
 
 	watch := watch.New(wFlags)
-	watch.Start()
+	go watch.Start()
+
+	// When CTRL+C, SIGINT and SIGTERM signal occurs
+	// Then Close IMAP connection
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	<-ch
+	close(ch)
+	watch.Stop()
 
 	fmt.Println("Have a nice day.")
 }
@@ -31,9 +41,9 @@ func parseAndCheckFlags() (*watch.Flags, error) {
 
 	flag.Usage = printUsage
 
-	flag.StringVarP(&wflags.Host, "host", "h", "", "IMAP server hostname or ip address.")
-	flag.UintVarP(&wflags.Port, "port", "p", 143, "IMAP server port number. Defaults to 143 or 993 for ssl.")
-	flag.BoolVar(&wflags.Ssl, "ssl", false, "Enforce a SSL connection. Defaults to true if port is 993.")
+	flag.StringVarP(&wflags.Host, "host", "h", "imap.gmail.com", "IMAP server hostname or ip address.")
+	flag.UintVarP(&wflags.Port, "port", "p", 993, "IMAP server port number. Defaults to 143 or 993 for ssl.")
+	flag.BoolVar(&wflags.Ssl, "ssl", true, "Enforce a SSL connection. Defaults to true if port is 993.")
 	flag.StringVarP(&wflags.Username, "user", "U", "", "IMAP login username.")
 	flag.StringVarP(&wflags.Password, "password", "P", "", "IMAP login password.")
 	flag.StringVarP(&wflags.Mailbox, "mailbox", "b", "INBOX", "Mailbox to monitor/idle on. Defaults to: \"INBOX\".")
