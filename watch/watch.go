@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vjeantet/postman/handler"
-	"github.com/vjeantet/postman/imap"
-	"github.com/vjeantet/postman/version"
+	"github.com/etrepat/postman/handler"
+	"github.com/etrepat/postman/imap"
+	"github.com/etrepat/postman/version"
 )
 
 const (

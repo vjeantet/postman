@@ -8,9 +8,9 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/etrepat/postman/version"
+	"github.com/etrepat/postman/watch"
 	flag "github.com/ogier/pflag"
-	"github.com/vjeantet/postman/version"
-	"github.com/vjeantet/postman/watch"
 )
 
 func main() {
