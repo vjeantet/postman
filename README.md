@@ -65,9 +65,9 @@ The IMAP mailbox name to start monitoring on. Will default to *INBOX* if not giv
 
 #### -m, --mode
 
-Sets the daemon mode of operation. Must be one of: `logger`, `postback`.
+Sets the daemon mode of operation. Must be one of: `logger`, `postback`, `smart`, and `hipchat`
 
-The `logger` mode is mainly for debugging/testing purposes and it will "spit out" the raw email message data into stdout whenever a new mail arrives at the specified IMAP mailbox.
+The `logger` mode is mainly for debugging/testing purposes and it will "spit out" the raw email message data into stdout whenever a new mail arrives at the specified IMAP mailbox.  `smart` gives just info about the email in the logs.  `hipchat` will send the message to a hipchat room, need to specify room name and room authentication.
 
 In `postback` mode, Postman will grab the raw email message data and perform a **POST** request to an endpoint of your choosing. This mode allows for the following additional parameters:
 

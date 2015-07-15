@@ -38,6 +38,9 @@ type Flags struct {
 	PostbackUrl   string
 	PostEncoded   bool
 	PostParamName string
+	RoomAuth      string
+	RoomName      string
+	RoomColor     string
 }
 
 type Watch struct {
@@ -192,7 +195,7 @@ func New(flags *Flags, handlers ...handler.MessageHandler) *Watch {
 		case DELIVERY_MODE_SMART:
 			watch.AddHandler(handler.New(handler.SMART_HANDLER))
 		case DELIVERY_MODE_HIPCHAT:
-			watch.AddHandler(handler.New(handler.HIPCHAT_HANDLER))
+			watch.AddHandler(handler.New(handler.HIPCHAT_HANDLER, flags.RoomAuth, flags.RoomName, flags.RoomColor))
 		}
 	}
 
