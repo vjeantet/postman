@@ -21,30 +21,21 @@ type HipChatHandler struct {
 func (hnd *HipChatHandler) Deliver(message string) error {
 	mailMessage, _ := mail.ReadMessage(bytes.NewBufferString(message))
 	mime, _ := enmime.ParseMIMEBody(mailMessage)
-	// 	s := `
-	// De    : %s
-	// Sujet : %s
-	// Text  : %d chars
-	// Html  : %d chars
-	// Inlines      : %d
-	// Attachements : %d
-	// Others       : %d`
-	// 	log.Printf(s,
-	// 		mime.GetHeader("From"),
-	// 		mime.GetHeader("Subject"),
-	// 		len(mime.Text),
-	// 		len(mime.Html),
-	// 		len(mime.Inlines),
-	// 		len(mime.Attachments),
-	// 		len(mime.OtherParts),
-	// 	)
 
-	sendHipChat(mime, hnd)
-
-	return nil
+	return sendHipChat(mime, hnd)
 }
 
-func sendHipChat(mime *enmime.MIMEBody, hnd *HipChatHandler) {
+//short truncate message, note not unicode compliant
+func short(s string, i int) string {
+	runes := []rune(s)
+	if len(runes) > i {
+		return string(runes[:i])
+	}
+	return s
+}
+
+//sendHipChat transform email to message, log and send to hipchat room
+func sendHipChat(mime *enmime.MIMEBody, hnd *HipChatHandler) error {
 
 	s := `
 De    : %s
@@ -65,6 +56,24 @@ Others       : %d`
 		len(mime.OtherParts),
 	)
 
+	//log general message information
+	log.Println(message)
+
+	s = `
+From     : %s
+Subject  : %s
+Text     : %s`
+
+	message = fmt.Sprintf(s,
+		mime.GetHeader("From"),
+		mime.GetHeader("Subject"),
+		mime.Text,
+	)
+
+	//need to truncate messag to 10000, supported by hipchat api
+	message = short(message, 10000)
+
+	//log what sending to hipchat
 	log.Println(message)
 
 	c := hipchat.NewClient(hnd.RoomAuth)
@@ -74,9 +83,11 @@ Others       : %d`
 
 	_, err := c.Room.Notification(hnd.RoomName, notifRq)
 	if err != nil {
-		panic(err)
+		log.Println("failed to send to hipchat: " + err.Error())
+		return err
 	}
 
+	return nil
 }
 
 //Describe the handler

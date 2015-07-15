@@ -77,8 +77,10 @@ func parseAndCheckFlags() (*watch.Flags, error) {
 			return wflags, newFlagsError("Unknown delivery mode: \"%s\". Must be one of: %s.", wflags.Mode, strings.Join(watch.ValidDeliveryModes(), ", "))
 		} else if wflags.Mode == "postback" && wflags.PostbackUrl == "" {
 			return wflags, newFlagsError("On postback mode, delivery url must be specified.")
-		} else if wflags.Mode == "hipchat" && (wflags.RoomAuth == "" || wflags.RoomName == "") {
-			return wflags, newFlagsError("On hipchat mode, room auth and room name must be specified.")
+		} else if wflags.Mode == "hipchat" && wflags.RoomAuth == "" {
+			return wflags, newFlagsError("On hipchat mode, room authentication token must be specified.")
+		} else if wflags.Mode == "hipchat" && wflags.RoomName == "" {
+			return wflags, newFlagsError("On hipchat mode, room name must be specified.")
 		}
 	}
 
