@@ -12,6 +12,9 @@ import (
 
 //HipChatHandler struct
 type HipChatHandler struct {
+	RoomAuth  string
+	RoomName  string
+	RoomColor string
 }
 
 //Deliver handles hipchat delivery
@@ -36,16 +39,12 @@ func (hnd *HipChatHandler) Deliver(message string) error {
 	// 		len(mime.OtherParts),
 	// 	)
 
-	sendHipChat(mime)
+	sendHipChat(mime, hnd)
 
 	return nil
 }
 
-func sendHipChat(mime *enmime.MIMEBody) {
-
-	roomAuth := "IEV0ODUXMpDXprgA0aeCCIfOhqzQGg04dT2S882N"
-	roomName := "testroom5"
-	roomColor := "green"
+func sendHipChat(mime *enmime.MIMEBody, hnd *HipChatHandler) {
 
 	s := `
 De    : %s
@@ -68,12 +67,12 @@ Others       : %d`
 
 	log.Println(message)
 
-	c := hipchat.NewClient(roomAuth)
+	c := hipchat.NewClient(hnd.RoomAuth)
 
 	//If specify html, need to determine/format the escape characters
-	notifRq := &hipchat.NotificationRequest{Color: roomColor, Message: message, MessageFormat: "text"}
+	notifRq := &hipchat.NotificationRequest{Color: hnd.RoomColor, Message: message, MessageFormat: "text"}
 
-	_, err := c.Room.Notification(roomName, notifRq)
+	_, err := c.Room.Notification(hnd.RoomName, notifRq)
 	if err != nil {
 		panic(err)
 	}
@@ -86,6 +85,9 @@ func (hnd *HipChatHandler) Describe() string {
 }
 
 //NewHipChatHandler create the handler
-func NewHipChatHandler() *HipChatHandler {
-	return &HipChatHandler{}
+func NewHipChatHandler(roomAuth string, roomName string, roomColor string) *HipChatHandler {
+	return &HipChatHandler{
+		RoomAuth:  roomAuth,
+		RoomName:  roomName,
+		RoomColor: roomColor}
 }

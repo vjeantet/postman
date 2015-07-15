@@ -26,7 +26,7 @@ func New(t uint, args ...interface{}) (hnd MessageHandler) {
 		hnd = NewSmartHandler()
 
 	case HIPCHAT_HANDLER:
-		hnd = NewHipChatHandler()
+		hnd = NewHipChatHandler(args[0].(string), args[1].(string), args[2].(string))
 	}
 
 	return hnd

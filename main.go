@@ -52,6 +52,9 @@ func parseAndCheckFlags() (*watch.Flags, error) {
 	flag.BoolVar(&wflags.PostEncoded, "encode", false, "(postback only) POST messages as form data (x-form-urlencoded). See `parname` flag.")
 	flag.StringVar(&wflags.PostParamName, "parname", "message", "(postback only) POST parameter name. Defaults to: \"message\".")
 	flag.BoolVarP(&printVersion, "version", "v", false, "Outputs the version information.")
+	flag.StringVarP(&wflags.RoomAuth, "auth", "a", "", "(hipchat only) room authentication token.")
+	flag.StringVarP(&wflags.RoomName, "name", "n", "", "(hipchat only) room name.")
+	flag.StringVarP(&wflags.RoomColor, "color", "c", "green", "(hipchat only) room color. Defaults to \"green\".")
 
 	flag.Parse()
 
@@ -74,6 +77,8 @@ func parseAndCheckFlags() (*watch.Flags, error) {
 			return wflags, newFlagsError("Unknown delivery mode: \"%s\". Must be one of: %s.", wflags.Mode, strings.Join(watch.ValidDeliveryModes(), ", "))
 		} else if wflags.Mode == "postback" && wflags.PostbackUrl == "" {
 			return wflags, newFlagsError("On postback mode, delivery url must be specified.")
+		} else if wflags.Mode == "hipchat" && (wflags.RoomAuth == "" || wflags.RoomName == "") {
+			return wflags, newFlagsError("On hipchat mode, room auth and room name must be specified.")
 		}
 	}
 
