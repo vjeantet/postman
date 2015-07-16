@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/mail"
+	"strings"
 
+	"github.com/jaytaylor/html2text"
 	"github.com/tbruyelle/hipchat-go/hipchat"
 	"github.com/vjeantet/go.enmime"
 )
@@ -59,18 +61,20 @@ Others       : %d`
 	//log general message information
 	log.Println(message)
 
+	messageFormat := "text"
+
 	s = `
-From     : %s
-Subject  : %s
-%s`
+  From     : %s
+  Subject  : %s
+  %s`
 
 	message = fmt.Sprintf(s,
 		mime.GetHeader("From"),
 		mime.GetHeader("Subject"),
-		mime.Text,
+		formatMessage(mime.Text),
 	)
 
-	//need to truncate messag to 10000, supported by hipchat api
+	//need to truncate message to 10000, supported by hipchat api
 	message = short(message, 10000)
 
 	//log what sending to hipchat
@@ -79,7 +83,7 @@ Subject  : %s
 	c := hipchat.NewClient(hnd.RoomAuth)
 
 	//If specify html, need to determine/format the escape characters
-	notifRq := &hipchat.NotificationRequest{Color: hnd.RoomColor, Message: message, MessageFormat: "text"}
+	notifRq := &hipchat.NotificationRequest{Color: hnd.RoomColor, Message: message, MessageFormat: messageFormat}
 
 	_, err := c.Room.Notification(hnd.RoomName, notifRq)
 	if err != nil {
@@ -88,6 +92,22 @@ Subject  : %s
 	}
 
 	return nil
+}
+
+//formatMessage make into text if contains html
+func formatMessage(message string) string {
+
+	isHTML := strings.Contains(message, "<html>")
+
+	if isHTML {
+		text, err := html2text.FromString(message)
+		if err != nil {
+			log.Println("failed to convert to text " + err.Error())
+		}
+		return text
+	}
+
+	return message
 }
 
 //Describe the handler
