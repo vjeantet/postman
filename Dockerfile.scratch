@@ -1,5 +1,5 @@
 FROM scratch
-MAINTAINER	James Castillo "jcastillo@opentable.com"
+MAINTAINER	James Castillo "jcastillo@gmail.com"
 
 ADD main /
 ADD ca-certificates.crt /etc/ssl/certs/
