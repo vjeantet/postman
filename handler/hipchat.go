@@ -8,8 +8,15 @@ import (
 	"strings"
 
 	"github.com/jaytaylor/html2text"
+	"github.com/kennygrant/sanitize"
 	"github.com/tbruyelle/hipchat-go/hipchat"
 	"github.com/vjeantet/go.enmime"
+)
+
+var (
+	allowedTags = []string{"a", "b", "i", "strong", "em", "br", "img", "pre", "code", "li", "table", "ol", "thead", "tr", "th", "tbody", "td"}
+
+	allowedAttributes = []string{"id", "class", "src", "href", "title", "alt", "name", "rel"}
 )
 
 //HipChatHandler struct
@@ -63,16 +70,22 @@ Others       : %d`
 
 	messageFormat := "text"
 
-	s = `
-  From     : %s
-  Subject  : %s
-  %s`
+	if strings.Contains(mime.Text, "<html>") {
+		messageFormat = "html"
+		message = sanitizeMessage(mime.Text)
+	} else {
 
-	message = fmt.Sprintf(s,
-		mime.GetHeader("From"),
-		mime.GetHeader("Subject"),
-		formatMessage(mime.Text),
-	)
+		s = `
+From     : %s
+Subject  : %s
+%s`
+
+		message = fmt.Sprintf(s,
+			mime.GetHeader("From"),
+			mime.GetHeader("Subject"),
+			mime.Text,
+		)
+	}
 
 	//need to truncate message to 10000, supported by hipchat api
 	message = short(message, 10000)
@@ -108,6 +121,24 @@ func formatMessage(message string) string {
 	}
 
 	return message
+}
+
+func sanitizeMessage(message string) string {
+
+	isHTML := strings.Contains(message, "<html>")
+
+	if isHTML {
+
+		text, err := sanitize.HTMLAllowing(message, allowedTags, allowedAttributes)
+
+		if err != nil {
+			log.Println("failed to convert to text " + err.Error())
+		}
+		return text
+	}
+
+	return message
+
 }
 
 //Describe the handler
