@@ -130,6 +130,7 @@ https://registry.hub.docker.com/u/jcastillo/postman/
 ```
 docker run -e POSTMAN_EMAIL=[email@gmail.com] -e POSTMAN_PASSWORD=[email_password] -e POSTMAN_ROOMAUTH=[hipchat_room_auth] -e POSTMAN_ROOMNAME=[hipchat_room_name] -d jcastillo/postman:v1
 ```
+Brackets above were just added to show these were examples, they shouldn't be included in actual call
 
 ## Contributing
 
