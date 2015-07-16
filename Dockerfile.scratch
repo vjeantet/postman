@@ -1,0 +1,8 @@
+FROM scratch
+MAINTAINER	James Castillo "jcastillo@opentable.com"
+
+ADD main /
+ADD ca-certificates.crt /etc/ssl/certs/
+
+# Default command that auto starts the postman
+CMD ["./main"]
