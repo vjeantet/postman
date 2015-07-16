@@ -133,7 +133,7 @@ https://registry.hub.docker.com/u/jcastillo/postman/
 The command line parameters can be specified via environment variables, Mode is defaulted to 'hipchat' if not specified in environment variable.  SSL to true.  Host to imap.gmail.com.
 
 ```
-docker run -e POSTMAN_EMAIL=[email@gmail.com] -e POSTMAN_PASSWORD=[email_password] -e POSTMAN_ROOMAUTH=[hipchat_room_auth] -e POSTMAN_ROOMNAME=[hipchat_room_name] -d jcastillo/postman:v1
+docker run -e POSTMAN_EMAIL=[email@gmail.com] -e POSTMAN_PASSWORD=[email_password] -e POSTMAN_ROOMAUTH=[hipchat_room_auth] -e POSTMAN_ROOMNAME=[hipchat_room_name] -d jcastillo/postman:v2
 ```
 Brackets above were just added to show these were examples, they shouldn't be included in actual call
 
