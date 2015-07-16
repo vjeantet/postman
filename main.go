@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"runtime"
@@ -10,8 +11,23 @@ import (
 
 	"github.com/etrepat/postman/version"
 	"github.com/etrepat/postman/watch"
+	"github.com/kelseyhightower/envconfig"
 	flag "github.com/ogier/pflag"
 )
+
+// Specification of config values located as ENV variables
+// They have name POSTMAN_*
+type Specification struct {
+	Debug     bool
+	Email     string
+	Password  string
+	RoomAuth  string
+	RoomColor string
+	RoomName  string
+	Mode      string
+	SSL       bool
+	Host      string
+}
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -58,8 +74,41 @@ func parseAndCheckFlags() (*watch.Flags, error) {
 
 	flag.Parse()
 
+	//Going to use environment variables instead and populate the wflags structure
+	//This is good for docker usage that doesn't execute a shell
 	if flag.NFlag() == 0 {
-		return wflags, newFlagsError("No options provided.")
+
+		var s Specification
+
+		//Set defaults, gets overridden by environment variables
+		s.Debug = true
+		s.RoomAuth = ""
+		s.RoomName = ""
+		s.RoomColor = "random"
+		s.Host = "imap.gmail.com"
+		s.SSL = true
+		s.Email = ""
+		s.Password = ""
+		s.Mode = "hipchat"
+
+		//This merges environment variables and defaults
+		err := envconfig.Process("postman", &s)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		//Add to wflags to perform rest of validation and use in app
+		wflags.RoomAuth = s.RoomAuth
+		wflags.RoomName = s.RoomName
+		wflags.RoomColor = s.RoomColor
+		wflags.Host = s.Host
+		wflags.Ssl = s.SSL
+		wflags.Username = s.Email
+		wflags.Password = s.Password
+		wflags.Mode = s.Mode
+
+		fmt.Println("Initialized values from Environment Variables")
+		fmt.Printf("Host: %s\nSSL: %t\nUsername: %s\nPassword: %s\nMode: %s\nRoomAuth: %s\nRoomName: %s\nRoomColor: %s\n", wflags.Host, wflags.Ssl, wflags.Username, wflags.Password, wflags.Mode, wflags.RoomAuth, wflags.RoomName, wflags.RoomColor)
 	}
 
 	if printVersion {
@@ -72,16 +121,16 @@ func parseAndCheckFlags() (*watch.Flags, error) {
 
 	if wflags.Mode == "" {
 		return wflags, newFlagsError("Delivery mode must be specified. Should be one of: %s.", strings.Join(watch.ValidDeliveryModes(), ", "))
-	} else {
-		if !watch.DeliveryModeValid(wflags.Mode) {
-			return wflags, newFlagsError("Unknown delivery mode: \"%s\". Must be one of: %s.", wflags.Mode, strings.Join(watch.ValidDeliveryModes(), ", "))
-		} else if wflags.Mode == "postback" && wflags.PostbackUrl == "" {
-			return wflags, newFlagsError("On postback mode, delivery url must be specified.")
-		} else if wflags.Mode == "hipchat" && wflags.RoomAuth == "" {
-			return wflags, newFlagsError("On hipchat mode, room authentication token must be specified.")
-		} else if wflags.Mode == "hipchat" && wflags.RoomName == "" {
-			return wflags, newFlagsError("On hipchat mode, room name must be specified.")
-		}
+	}
+
+	if !watch.DeliveryModeValid(wflags.Mode) {
+		return wflags, newFlagsError("Unknown delivery mode: \"%s\". Must be one of: %s.", wflags.Mode, strings.Join(watch.ValidDeliveryModes(), ", "))
+	} else if wflags.Mode == "postback" && wflags.PostbackUrl == "" {
+		return wflags, newFlagsError("On postback mode, delivery url must be specified.")
+	} else if wflags.Mode == "hipchat" && wflags.RoomAuth == "" {
+		return wflags, newFlagsError("On hipchat mode, room authentication token must be specified.")
+	} else if wflags.Mode == "hipchat" && wflags.RoomName == "" {
+		return wflags, newFlagsError("On hipchat mode, room name must be specified.")
 	}
 
 	if wflags.Port == 143 && wflags.Ssl == true {
