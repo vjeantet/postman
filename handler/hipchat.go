@@ -62,7 +62,7 @@ Others       : %d`
 	s = `
 From     : %s
 Subject  : %s
-Text     : %s`
+%s`
 
 	message = fmt.Sprintf(s,
 		mime.GetHeader("From"),
