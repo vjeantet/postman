@@ -101,7 +101,7 @@ exec su - <user> -c 'cd /home/<user>/sites/<my-awesome-app>; ./bin/postman -h im
 
 ##Docker:
 
-###From Scratch, resulting image aprox 6.5 megs
+###From Scratch, resulting image aprox 8.9 megs
 
 #####To cross compile (build on Mac for Docker Container)
 
