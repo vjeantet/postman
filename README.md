@@ -126,7 +126,10 @@ docker build -t jcastillo/postman:v1 -f Dockerfile.scratch .
 
 https://registry.hub.docker.com/u/jcastillo/postman/
 
-
+#####Example calling docker
+```
+docker run -e POSTMAN_EMAIL=[email@gmail.com] -e POSTMAN_PASSWORD=[email_password] -e POSTMAN_ROOMAUTH=[hipchat_room_auth] -e POSTMAN_ROOMNAME=[hipchat_room_name] -d jcastillo/postman:v1
+```
 
 ## Contributing
 
