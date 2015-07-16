@@ -75,6 +75,8 @@ In `postback` mode, Postman will grab the raw email message data and perform a *
 * **--encode**: Will perform the POST request as if it were form data (x-form-urlencoded) wrapping the raw email message in a post parameter.
 * **--parname**: Sets the parameter name to be used when `--encode` is set. Defaults to **message**.
 
+### Note if calling from docker image please see below, you can specify parameters via Environment Variables instead
+
 ## Receiving email data in Rails
 
 This utility was developed as part of a Rails application. You should take into consideration the following points when using the *postback* functionality in a Rails app:
@@ -127,6 +129,9 @@ docker build -t jcastillo/postman:v1 -f Dockerfile.scratch .
 https://registry.hub.docker.com/u/jcastillo/postman/
 
 #####Example calling docker
+
+The command line parameters can be specified via environment variables, Mode is defaulted to 'hipchat' if not specified in environment variable.  SSL to true.  Host to imap.gmail.com.
+
 ```
 docker run -e POSTMAN_EMAIL=[email@gmail.com] -e POSTMAN_PASSWORD=[email_password] -e POSTMAN_ROOMAUTH=[hipchat_room_auth] -e POSTMAN_ROOMNAME=[hipchat_room_name] -d jcastillo/postman:v1
 ```
