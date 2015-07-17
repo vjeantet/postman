@@ -72,7 +72,7 @@ Others       : %d`
 
 	if strings.Contains(mime.Text, "<html>") {
 		messageFormat = "html"
-		message = sanitizeMessage(mime.Text)
+		message = sanitizeMessage(mime.Html)
 	} else {
 
 		s = `
