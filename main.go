@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -29,6 +30,26 @@ type Specification struct {
 	Host      string
 }
 
+//Health respond to http requests for health checks
+type Health struct{}
+
+var connection string
+
+func (h Health) ServeHTTP(
+	w http.ResponseWriter,
+	r *http.Request) {
+	fmt.Fprintf(w, "Service responding from %s", r.URL.Path[1:])
+}
+
+func handleHealth() {
+
+	var h Health
+	err := http.ListenAndServe(connection, h)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -39,6 +60,9 @@ func main() {
 
 	watch := watch.New(wFlags)
 	go watch.Start()
+
+	//In case hosting docker container that pings a health endpoint
+	go handleHealth()
 
 	// When CTRL+C, SIGINT and SIGTERM signal occurs
 	// Then Close IMAP connection
@@ -90,6 +114,17 @@ func parseAndCheckFlags() (*watch.Flags, error) {
 		s.Email = ""
 		s.Password = ""
 		s.Mode = "hipchat"
+
+		//PORT0 can't have HIPCHAT_PORT0, so checking for it's env seperately
+		port := os.Getenv("PORT0")
+
+		if len(port) < 1 {
+			port = "4000"
+		}
+
+		connection = fmt.Sprintf("0.0.0.0:%s", port)
+
+		fmt.Printf("Connection: %s\n", connection)
 
 		//This merges environment variables and defaults
 		err := envconfig.Process("postman", &s)
