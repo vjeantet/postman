@@ -6,6 +6,7 @@ const (
 	POSTBACK_HANDLER = 1 << iota
 	LOGGER_HANDLER
 	SMART_HANDLER
+	HIPCHAT_HANDLER
 )
 
 type MessageHandler interface {
@@ -23,6 +24,9 @@ func New(t uint, args ...interface{}) (hnd MessageHandler) {
 
 	case SMART_HANDLER:
 		hnd = NewSmartHandler()
+
+	case HIPCHAT_HANDLER:
+		hnd = NewHipChatHandler(args[0].(string), args[1].(string), args[2].(string))
 	}
 
 	return hnd

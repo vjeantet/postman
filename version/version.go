@@ -8,19 +8,23 @@ import (
 )
 
 const (
-	VERSION = "0.3.0"
+	//VERSION const
+	VERSION = "0.4.0"
 )
 
 var app, version, versionShort string
 
+//App function
 func App() string {
 	return app
 }
 
+//Version function
 func Version() string {
 	return version
 }
 
+//VersionShort function
 func VersionShort() string {
 	return versionShort
 }

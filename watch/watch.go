@@ -6,15 +6,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vjeantet/postman/handler"
-	"github.com/vjeantet/postman/imap"
-	"github.com/vjeantet/postman/version"
+	"github.com/etrepat/postman/handler"
+	"github.com/etrepat/postman/imap"
+	"github.com/etrepat/postman/version"
 )
 
 const (
 	DELIVERY_MODE_POSTBACK = "postback"
 	DELIVERY_MODE_LOGGER   = "logger"
 	DELIVERY_MODE_SMART    = "smart"
+	DELIVERY_MODE_HIPCHAT  = "hipchat"
 )
 
 var (
@@ -22,7 +23,8 @@ var (
 	DELIVERY_MODES = map[string]bool{
 		DELIVERY_MODE_POSTBACK: true,
 		DELIVERY_MODE_LOGGER:   true,
-		DELIVERY_MODE_SMART:    true}
+		DELIVERY_MODE_SMART:    true,
+		DELIVERY_MODE_HIPCHAT:  true}
 )
 
 type Flags struct {
@@ -36,6 +38,9 @@ type Flags struct {
 	PostbackUrl   string
 	PostEncoded   bool
 	PostParamName string
+	RoomAuth      string
+	RoomName      string
+	RoomColor     string
 }
 
 type Watch struct {
@@ -189,6 +194,8 @@ func New(flags *Flags, handlers ...handler.MessageHandler) *Watch {
 			watch.AddHandler(handler.New(handler.LOGGER_HANDLER, DefaultLogger))
 		case DELIVERY_MODE_SMART:
 			watch.AddHandler(handler.New(handler.SMART_HANDLER))
+		case DELIVERY_MODE_HIPCHAT:
+			watch.AddHandler(handler.New(handler.HIPCHAT_HANDLER, flags.RoomAuth, flags.RoomName, flags.RoomColor))
 		}
 	}
 

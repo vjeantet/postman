@@ -1,0 +1,10 @@
+FROM scratch
+MAINTAINER	James Castillo "jcastillo@gmail.com"
+
+ADD main /
+
+#If docker container connects to https
+ADD ca-certificates.crt /etc/ssl/certs/
+
+# Default command that auto starts the postman
+CMD ["./main"]
